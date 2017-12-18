@@ -9,13 +9,13 @@ module id(
     input wire[`RegBus]           reg1_data_i,
     input wire[`RegBus]           reg2_data_i,
 
-    //送到regfile的信息
+    //送到regfile的信�?
     output reg                    reg1_read_o,
     output reg                    reg2_read_o,
     output reg[`RegAddrBus]       reg1_addr_o,
     output reg[`RegAddrBus]       reg2_addr_o,
 
-    //送到执行阶段的信息
+    //送到执行阶段的信�?
     output reg[`AluOpBus]         aluop_o,
     output reg[`AluSelBus]        alusel_o,
     output reg[`RegBus]           reg1_o,
@@ -50,7 +50,7 @@ module id(
     reg[`RegBus]  imm;
     reg instvalid;
 
-    // 对指令进行译码 ///////////////////////////////////////
+    // 对指令进行译�? ///////////////////////////////////////
     always @ (*) begin
         if (rst == `RstEnable) begin
             aluop_o <= `EXE_NOP_OP;
@@ -76,29 +76,31 @@ module id(
             imm <= `ZeroWord;
 
             // 指令
-            case (opcode) begin
+            case (opcode)
                 `OPCODE_OP_IMM: begin
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
                     reg2_read_o <= 1'b0;
-                    imm <= {20{inst_i[31:31]}, inst_i[31:20]};
+                    imm <= {{20{inst_i[31:31]}}, inst_i[31:20]};
                     wd_o <= rd_addr;
                     instvalid <= `InstValid;
                     case (funct3)
-                        `FUNCT3_ORI`: begin
+                        `FUNCT3_ORI: begin
                             aluop_o <= `EXE_OR_OP;
                             alusel_o <= `EXE_RES_LOGIC;
+                        end
                         default: begin
                         end
                     endcase // op imm funct3
-                default: begin
                 end
+                default: begin
+                end // op imm
             endcase // opcode
 
         end //if
     end //always
 
-    // 确定进行运算的源操作数 ///////////////////////////////
+    // 确定进行运算的源操作�? ///////////////////////////////
     always @ (*) begin
         if(rst == `RstEnable) begin
             reg1_o <= `ZeroWord;
@@ -112,7 +114,6 @@ module id(
     end
 
     always @ (*) begin
-        stallreq_for_reg2_loadrelate <= `NoStop;
         if(rst == `RstEnable) begin
             reg2_o <= `ZeroWord;
         end else if(reg2_read_o == 1'b1) begin

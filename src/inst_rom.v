@@ -10,7 +10,7 @@ module inst_rom(
 
     reg[`InstBus]  inst_mem[0:`InstMemNum-1]; // 以指令为单位
 
-    initial $readmemh ("inst_rom.data", inst_mem);
+    initial $readmemh ("D:\\Users\\DELL\\Desktop\\inst_rom.data", inst_mem);
 
     always @ (*) begin
         if (ce == `ChipDisable) begin

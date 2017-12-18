@@ -1,4 +1,4 @@
- `include "defines.v"
+`include "defines.v"
 
 module cpu_riscv(
 
@@ -8,15 +8,15 @@ module cpu_riscv(
 
     input wire[`RegBus]            rom_data_i,
     output wire[`RegBus]           rom_addr_o,
-    output wire                    rom_ce_o,
+    output wire                    rom_ce_o
 );
 
-    //连接IF/ID模块的输出与译码阶段ID模块的输入
+    //连接IF/ID模块的输出与译码阶段ID模块的输�?
     wire[`InstAddrBus] pc;
     wire[`InstAddrBus] id_pc_i;
     wire[`InstBus] id_inst_i;
 
-    //连接译码阶段ID模块的输出与ID/EX模块的输入
+    //连接译码阶段ID模块的输出与ID/EX模块的输�?
     wire[`AluOpBus] id_aluop_o;
     wire[`AluSelBus] id_alusel_o;
     wire[`RegBus] id_reg1_o;
@@ -24,7 +24,7 @@ module cpu_riscv(
     wire id_wreg_o;
     wire[`RegAddrBus] id_wd_o;
 
-    //连接ID/EX模块的输出与执行阶段EX模块的输入
+    //连接ID/EX模块的输出与执行阶段EX模块的输�?
     wire[`AluOpBus] ex_aluop_i;
     wire[`AluSelBus] ex_alusel_i;
     wire[`RegBus] ex_reg1_i;
@@ -32,27 +32,27 @@ module cpu_riscv(
     wire ex_wreg_i;
     wire[`RegAddrBus] ex_wd_i;
 
-    //连接执行阶段EX模块的输出与EX/MEM模块的输入
+    //连接执行阶段EX模块的输出与EX/MEM模块的输�?
     wire ex_wreg_o;
     wire[`RegAddrBus] ex_wd_o;
     wire[`RegBus] ex_wdata_o;
 
-    //连接EX/MEM模块的输出与访存阶段MEM模块的输入
+    //连接EX/MEM模块的输出与访存阶段MEM模块的输�?
     wire mem_wreg_i;
     wire[`RegAddrBus] mem_wd_i;
     wire[`RegBus] mem_wdata_i;
 
-    //连接访存阶段MEM模块的输出与MEM/WB模块的输入
+    //连接访存阶段MEM模块的输出与MEM/WB模块的输�?
     wire mem_wreg_o;
     wire[`RegAddrBus] mem_wd_o;
     wire[`RegBus] mem_wdata_o;
 
-    //连接MEM/WB模块的输出与回写阶段的输入
+    //连接MEM/WB模块的输出与回写阶段的输�?
     wire wb_wreg_i;
     wire[`RegAddrBus] wb_wd_i;
     wire[`RegBus] wb_wdata_i;
 
-    //连接译码阶段ID模块与通用寄存器Regfile模块
+    //连接译码阶段ID模块与�?�用寄存器Regfile模块
     wire reg1_read;
     wire reg2_read;
     wire[`RegBus] reg1_data;
@@ -86,24 +86,24 @@ module cpu_riscv(
         .pc_i(id_pc_i),
         .inst_i(id_inst_i),
 
-        // 来自regfile的输入
+        // 来自regfile的输�?
         .reg1_data_i(reg1_data),
         .reg2_data_i(reg2_data),
 
-        //送到regfile的信息
+        //送到regfile的信�?
         .reg1_read_o(reg1_read),
         .reg2_read_o(reg2_read),
 
         .reg1_addr_o(reg1_addr),
         .reg2_addr_o(reg2_addr),
 
-        //送到ID/EX模块的信息
+        //送到ID/EX模块的信�?
         .aluop_o(id_aluop_o),
         .alusel_o(id_alusel_o),
         .reg1_o(id_reg1_o),
         .reg2_o(id_reg2_o),
         .wd_o(id_wd_o),
-        .wreg_o(id_wreg_o),
+        .wreg_o(id_wreg_o)
     );
 
     //通用寄存器Regfile例化
@@ -126,7 +126,7 @@ module cpu_riscv(
         .clk(clk),
         .rst(rst),
 
-        //从译码阶段ID模块传递的信息
+        //从译码阶段ID模块传�?�的信息
         .id_aluop(id_aluop_o),
         .id_alusel(id_alusel_o),
         .id_reg1(id_reg1_o),
@@ -134,20 +134,20 @@ module cpu_riscv(
         .id_wd(id_wd_o),
         .id_wreg(id_wreg_o),
 
-        //传递到执行阶段EX模块的信息
+        //传�?�到执行阶段EX模块的信�?
         .ex_aluop(ex_aluop_i),
         .ex_alusel(ex_alusel_i),
         .ex_reg1(ex_reg1_i),
         .ex_reg2(ex_reg2_i),
         .ex_wd(ex_wd_i),
-        .ex_wreg(ex_wreg_i),
+        .ex_wreg(ex_wreg_i)
     );
 
     //EX模块
     ex ex0(
         .rst(rst),
 
-        //送到执行阶段EX模块的信息
+        //送到执行阶段EX模块的信�?
         .aluop_i(ex_aluop_i),
         .alusel_i(ex_alusel_i),
         .reg1_i(ex_reg1_i),
@@ -158,7 +158,7 @@ module cpu_riscv(
         //EX模块的输出到EX/MEM模块信息
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
-        .wdata_o(ex_wdata_o),
+        .wdata_o(ex_wdata_o)
     );
 
     //EX/MEM模块
@@ -166,33 +166,30 @@ module cpu_riscv(
         .clk(clk),
         .rst(rst),
 
-        //来自执行阶段EX模块的信息
+        //来自执行阶段EX模块的信�?
         .ex_wd(ex_wd_o),
         .ex_wreg(ex_wreg_o),
         .ex_wdata(ex_wdata_o),
 
-        //送到访存阶段MEM模块的信息
+        //送到访存阶段MEM模块的信�?
         .mem_wd(mem_wd_i),
         .mem_wreg(mem_wreg_i),
-        .mem_wdata(mem_wdata_i),
+        .mem_wdata(mem_wdata_i)
     );
 
     //MEM模块例化
     mem mem0(
         .rst(rst),
 
-        //来自EX/MEM模块的信息
+        //来自EX/MEM模块的信�?
         .wd_i(mem_wd_i),
         .wreg_i(mem_wreg_i),
         .wdata_i(mem_wdata_i),
 
-        //来自memory的信息
-        .mem_data_i(ram_data_i),
-
-        //送到MEM/WB模块的信息
+        //送到MEM/WB模块的信�?
         .wd_o(mem_wd_o),
         .wreg_o(mem_wreg_o),
-        .wdata_o(mem_wdata_o),
+        .wdata_o(mem_wdata_o)
     );
 
     //MEM/WB模块
@@ -200,15 +197,15 @@ module cpu_riscv(
         .clk(clk),
         .rst(rst),
 
-        //来自访存阶段MEM模块的信息
+        //来自访存阶段MEM模块的信�?
         .mem_wd(mem_wd_o),
         .mem_wreg(mem_wreg_o),
         .mem_wdata(mem_wdata_o),
 
-        //送到回写阶段的信息
+        //送到回写阶段的信�?
         .wb_wd(wb_wd_i),
         .wb_wreg(wb_wreg_i),
-        .wb_wdata(wb_wdata_i),
+        .wb_wdata(wb_wdata_i)
     );
 
 endmodule

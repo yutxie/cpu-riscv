@@ -1,12 +1,11 @@
-'timescale 1ns / 1ps
+`timescale 1ns / 1ps
 
-module cpu_riscv_min_sopc_tb (
+module cpu_riscv_min_sopc_tb ();
+    
+    reg CLOCK_50;
+    reg rst;
 
-        reg CLOCK_50;
-        reg rst;
-    );
-
-    // 每10ns反转一次clk信号 一周期20ns 频率 50MHz
+    // �?10ns反转�?次clk信号 �?周期20ns 频率 50MHz
     initial begin
         CLOCK_50 = 1'b0;
         forever #10 CLOCK_50 = ~CLOCK_50;
@@ -19,8 +18,8 @@ module cpu_riscv_min_sopc_tb (
     end
 
     cpu_riscv_min_sopc cpu_riscv_min_sopc0(
-            .clk(CLOCK_50);
-            .rst(rst);
+            .clk(CLOCK_50),
+            .rst(rst)
         );
 
 endmodule // cpu_riscv_min_sopc_tb
