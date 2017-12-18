@@ -1,4 +1,4 @@
-//»´æ÷
+// ÂÖ®Â±Ä
 `define RstEnable 1'b1
 `define RstDisable 1'b0
 `define ZeroWord 32'h00000000
@@ -26,7 +26,7 @@
 `define ChipDisable 1'b0
 
 
-//÷∏¡Ó
+// Êåá‰ª§
 `define OPCODE_LUI 7'b0110111
 `define OPCODE_AUIPC 7'b0010111
 `define OPCODE_JAL 7'b1101111
@@ -95,7 +95,7 @@
 `define FUNCT7_OR 7'b0000000
 `define FUNCT7_AND 7'b0000000
 
-//AluOp
+// AluOp
 `define EXE_AND_OP   8'b00100100
 `define EXE_OR_OP    8'b00100101
 `define EXE_XOR_OP  8'b00100110
@@ -103,7 +103,7 @@
 `define EXE_ANDI_OP  8'b01011001
 `define EXE_ORI_OP  8'b01011010
 `define EXE_XORI_OP  8'b01011011
-`define EXE_LUI_OP  8'b01011100   
+`define EXE_LUI_OP  8'b01011100
 
 `define EXE_SLL_OP  8'b01111100
 `define EXE_SLLV_OP  8'b00000100
@@ -122,7 +122,7 @@
 `define EXE_SLT_OP  8'b00101010
 `define EXE_SLTU_OP  8'b00101011
 `define EXE_SLTI_OP  8'b01010111
-`define EXE_SLTIU_OP  8'b01011000   
+`define EXE_SLTIU_OP  8'b01011000
 `define EXE_ADD_OP  8'b00100000
 `define EXE_ADDU_OP  8'b00100001
 `define EXE_SUB_OP  8'b00100010
@@ -175,32 +175,32 @@
 
 `define EXE_NOP_OP    8'b00000000
 
-//AluSel
+// AluSel
 `define EXE_RES_LOGIC 3'b001
 `define EXE_RES_SHIFT 3'b010
-`define EXE_RES_MOVE 3'b011	
-`define EXE_RES_ARITHMETIC 3'b100	
+`define EXE_RES_MOVE 3'b011
+`define EXE_RES_ARITHMETIC 3'b100
 `define EXE_RES_MUL 3'b101
 `define EXE_RES_JUMP_BRANCH 3'b110
-`define EXE_RES_LOAD_STORE 3'b111	
+`define EXE_RES_LOAD_STORE 3'b111
 
 `define EXE_RES_NOP 3'b000
 
 
-//÷∏¡Ó¥Ê¥¢∆˜inst_rom
+// inst_rom
 `define InstAddrBus 31:0
 `define InstBus 31:0
-`define InstMemNum 131071
+`define InstMemNum 131071 // number of bytes in
 `define InstMemNumLog2 17
 
-// ˝æ›¥Ê¥¢∆˜data_ram
+// data_ram
 `define DataAddrBus 31:0
 `define DataBus 31:0
-`define DataMemNum 131071
+`define DataMemNum 131071 // ‰ª•byte‰∏∫Âçï‰Ωç
 `define DataMemNumLog2 17
 `define ByteWidth 7:0
 
-//Õ®”√ºƒ¥Ê∆˜regfile
+// regfile
 `define RegAddrBus 4:0
 `define RegBus 31:0
 `define RegWidth 32
@@ -209,13 +209,3 @@
 `define RegNum 32
 `define RegNumLog2 5
 `define NOPRegAddr 5'b00000
-
-//≥˝∑®div
-`define DivFree 2'b00
-`define DivByZero 2'b01
-`define DivOn 2'b10
-`define DivEnd 2'b11
-`define DivResultReady 1'b1
-`define DivResultNotReady 1'b0
-`define DivStart 1'b1
-`define DivStop 1'b0
