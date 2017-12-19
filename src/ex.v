@@ -20,6 +20,25 @@ module ex(
 
     reg[`RegBus] logicout;
     reg[`RegBus] shiftres;
+    reg[`RegBus] arithmeticres;
+
+    wire reg1_eq_reg2; // rs1 == rs2 ?
+    wire reg1_lt_reg2; // rs1 < rs2 ?
+    wire[`RegBus] reg2_i_mux;
+    wire[`RegBus] reg1_i_not;
+    wire[`RegBus] result_sum; // res of add
+
+    // preperation //////////////////////////////////////////
+    assign reg2_i_mux = ((aluop_i == `EXE_SUB_OP) ||
+                         (aluop_i == `EXE_SLT_OP)) ?
+                         (~reg2_i) + 1 : reg2_i;
+    assign result_sum = reg1_i + reg2_i_mux;
+    assign reg1_lt_reg2 = (aluop_i == `EXE_SLT_OP) ?
+                          ((reg1_i[31] && !reg2_i[31]) ||
+                           (!reg1_i[31] && !reg2_i[31] && result_sum[31]) ||
+                           (reg1_i[31] && reg1_i[31] && result_sum[31])) :
+                          (reg1_i < reg2_i);
+    assign reg1_i_not = ~reg1_i;
 
     // 依据 aluop_i 指示的算子进行运算 ////////////////////////
     // logic
@@ -46,7 +65,7 @@ module ex(
     // shift
     always @ (*) begin
         if(rst == `RstEnable) begin
-            logicout <= `ZeroWord;
+            shiftres <= `ZeroWord;
         end else begin
             case (aluop_i)
                 `EXE_SLL_OP: begin
@@ -65,6 +84,24 @@ module ex(
             endcase
         end    //if
     end      //always
+    // arithmetic
+    always @ (*) begin
+        if(rst == `RstEnable) begin
+            arithmeticres <= `ZeroWord;
+        end else begin
+            case (aluop_i)
+                `EXE_SLT_OP, `EXE_SLTU_OP: begin
+                    arithmeticres <= reg1_lt_reg2;
+                end
+                `EXE_ADD_OP, `EXE_ADDU_OP, `EXE_ADDI_OP, `EXE_ADDIU_OP: begin
+                    arithmeticres <= result_sum;
+                end
+                default: begin
+                    arithmeticres <= `ZeroWord;
+                end
+            endcase
+        end    //if
+    end      //always
 
     // 依据 alusel_i 指示的运算类型选择运算结果 //////////////////
     always @ ( * ) begin
@@ -76,6 +113,9 @@ module ex(
             end
             `EXE_RES_SHIFT: begin
                 wdata_o <= shiftres;
+            end
+            `EXE_RES_ARITHMETIC: begin
+                wdata_o <= arithmeticres;
             end
             default: begin
             end

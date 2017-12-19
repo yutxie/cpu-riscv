@@ -5,6 +5,7 @@
 ## to-do
 
 - 逻辑与移位指令check
+- 算术指令check
 
 ## reference
 

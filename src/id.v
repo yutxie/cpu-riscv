@@ -50,8 +50,6 @@ module id(
     wire[10:5] imm5_b_type = inst_i[30:25];
     wire[12:12] imm12_b_type = inst_i[31:31];
 
-    wire[31:12] imm_u_type = inst_i[31:12];
-
     wire[19:12] imm12_j_type = inst_i[19:12];
     wire[11:11] imm11_j_type = inst_i[20:20];
     wire[10:1] imm1_j_type = inst_i[30:21];
@@ -88,6 +86,16 @@ module id(
 
             // 指令
             case (opcode)
+                `OPCODE_LUI: begin
+                    wreg_o <= `WriteEnable;
+                    aluop_o <= `EXE_OR_OP;
+                    alusel_o <= `EXE_RES_LOGIC;
+                    reg1_read_o <= 1'b1;
+                    reg2_read_o <= 1'b0;
+                    imm <= {inst_i[31:12], 12'h0};
+                    wd_o <= rd_addr;
+                    instvalid <= `InstValid;
+                end
                 `OPCODE_OP_IMM: begin
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
@@ -122,6 +130,18 @@ module id(
                                 aluop_o <= `EXE_SRA_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
                                 imm[4:0] <= inst_i[24:20];
+                        end
+                        `FUNCT3_SLTI: begin
+                            aluop_o <= `EXE_SLT_OP;
+                            alusel_o <= `EXE_RES_ARITHMETIC;
+                        end
+                        `FUNCT3_SLTIU: begin
+                            aluop_o <= `EXE_SLTU_OP;
+                            alusel_o <= `EXE_RES_ARITHMETIC;
+                        end
+                        `FUNCT3_ADDI: begin
+                            aluop_o <= `EXE_ADD_OP;
+                            alusel_o <= `EXE_RES_ARITHMETIC;
                         end
                         default: begin
                         end
@@ -158,6 +178,23 @@ module id(
                                 aluop_o <= `EXE_SRA_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
                         end
+                        `FUNCT3_SLT: begin
+                            aluop_o <= `EXE_SLT_OP;
+                            alusel_o <= `EXE_RES_ARITHMETIC;
+                        end
+                        `FUNCT3_SLTU: begin
+                            aluop_o <= `EXE_SLTU_OP;
+                            alusel_o <= `EXE_RES_ARITHMETIC;
+                        end
+                        `FUNCT3_ADD: begin
+                            if (funct7 == `FUNCT7_ADD) begin
+                                aluop_o <= `EXE_ADD_OP;
+                                alusel_o <= `EXE_RES_ARITHMETIC;
+                            end else if(funct7 == `FUNCT7_SUB) begin
+                                aluop_o <= `EXE_SUB_OP;
+                                alusel_o <= `EXE_RES_ARITHMETIC;
+                            end
+                        end
                         default: begin
                         end
                     endcase //funct3
@@ -187,7 +224,6 @@ module id(
             reg1_o <= `ZeroWord;
         end
     end
-
     always @ (*) begin
         if(rst == `RstEnable) begin
             reg2_o <= `ZeroWord;
