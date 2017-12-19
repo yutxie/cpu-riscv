@@ -126,10 +126,11 @@ module id(
                                 aluop_o <= `EXE_SRL_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
                                 imm[4:0] <= inst_i[24:20];
-                            else if (funct7 == `FUNCT7_SRA) begin
+                            end else if (funct7 == `FUNCT7_SRA) begin
                                 aluop_o <= `EXE_SRA_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
                                 imm[4:0] <= inst_i[24:20];
+                            end
                         end
                         `FUNCT3_SLTI: begin
                             aluop_o <= `EXE_SLT_OP;
@@ -153,7 +154,7 @@ module id(
                     reg2_read_o <= 1'b1;
                     wd_o <= rd_addr;
                     instvalid <= `InstValid;
-                    case (funct3) begin
+                    case (funct3)
                         `FUNCT3_XOR: begin
                             aluop_o <= `EXE_XOR_OP;
                             alusel_o <= `EXE_RES_LOGIC;
@@ -174,9 +175,10 @@ module id(
                             if (funct7 == `FUNCT7_SRL) begin
                                 aluop_o <= `EXE_SRL_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
-                            else if (funct7 == `FUNCT7_SRA) begin
+                            end else if (funct7 == `FUNCT7_SRA) begin
                                 aluop_o <= `EXE_SRA_OP;
                                 alusel_o <= `EXE_RES_SHIFT;
+                            end
                         end
                         `FUNCT3_SLT: begin
                             aluop_o <= `EXE_SLT_OP;
