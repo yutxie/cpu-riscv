@@ -73,7 +73,8 @@ module id(
             reg1_addr_o <= `NOPRegAddr;
             reg2_addr_o <= `NOPRegAddr;
             imm <= 32'h0;
-        end else begin
+        end
+        else begin
             aluop_o <= `EXE_NOP_OP;
             alusel_o <= `EXE_RES_NOP;
             wd_o <= rd_addr;
@@ -95,16 +96,74 @@ module id(
                     wd_o <= rd_addr;
                     instvalid <= `InstValid;
                     case (funct3)
+                        `FUNCT3_XORI: begin
+                            aluop_o <= `EXE_XOR_OP;
+                            alusel_o <= `EXE_RES_LOGIC;
+                        end
                         `FUNCT3_ORI: begin
                             aluop_o <= `EXE_OR_OP;
                             alusel_o <= `EXE_RES_LOGIC;
                         end
+                        `FUNCT3_ANDI: begin
+                            aluop_o <= `EXE_AND_OP;
+                            alusel_o <= `EXE_RES_LOGIC;
+                        end
+                        `FUNCT3_SLLI: begin
+                            aluop_o <= `EXE_SLL_OP;
+                            alusel_o <= `EXE_RES_SHIFT;
+                            imm[4:0] <= inst_i[24:20];
+                        end
+                        `FUNCT3_SRLI: begin
+                            if (funct7 == `FUNCT7_SRL) begin
+                                aluop_o <= `EXE_SRL_OP;
+                                alusel_o <= `EXE_RES_SHIFT;
+                                imm[4:0] <= inst_i[24:20];
+                            else if (funct7 == `FUNCT7_SRA) begin
+                                aluop_o <= `EXE_SRA_OP;
+                                alusel_o <= `EXE_RES_SHIFT;
+                                imm[4:0] <= inst_i[24:20];
+                        end
                         default: begin
                         end
-                    endcase // op imm funct3
-                end
+                    endcase //funct3
+                end // opcode op imm
+                `OPCODE_OP: begin
+                    wreg_o <= `WriteEnable;
+                    reg1_read_o <= 1'b1;
+                    reg2_read_o <= 1'b1;
+                    wd_o <= rd_addr;
+                    instvalid <= `InstValid;
+                    case (funct3) begin
+                        `FUNCT3_XOR: begin
+                            aluop_o <= `EXE_XOR_OP;
+                            alusel_o <= `EXE_RES_LOGIC;
+                        end
+                        `FUNCT3_OR: begin
+                            aluop_o <= `EXE_OR_OP;
+                            alusel_o <= `EXE_RES_LOGIC;
+                        end
+                        `FUNCT3_AND: begin
+                            aluop_o <= `EXE_AND_OP;
+                            alusel_o <= `EXE_RES_LOGIC;
+                        end
+                        `FUNCT3_SLL: begin
+                            aluop_o <= `EXE_SLL_OP;
+                            alusel_o <= `EXE_RES_SHIFT;
+                        end
+                        `FUNCT3_SRL: begin
+                            if (funct7 == `FUNCT7_SRL) begin
+                                aluop_o <= `EXE_SRL_OP;
+                                alusel_o <= `EXE_RES_SHIFT;
+                            else if (funct7 == `FUNCT7_SRA) begin
+                                aluop_o <= `EXE_SRA_OP;
+                                alusel_o <= `EXE_RES_SHIFT;
+                        end
+                        default: begin
+                        end
+                    endcase //funct3
+                end // opcode op
                 default: begin
-                end // op imm
+                end
             endcase // opcode
 
         end //if
