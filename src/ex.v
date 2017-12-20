@@ -4,7 +4,7 @@ module ex(
 
     input wire                    rst,
 
-    //送到执行阶段的信息
+    // from id
     input wire[`AluOpBus]         aluop_i,
     input wire[`AluSelBus]        alusel_i,
     input wire[`RegBus]           reg1_i,
@@ -12,7 +12,7 @@ module ex(
     input wire[`RegAddrBus]       wd_i,
     input wire                    wreg_i,
 
-    //执行的结果
+    // to mem
     output reg[`RegAddrBus]       wd_o,
     output reg                    wreg_o,
     output reg[`RegBus]           wdata_o
@@ -29,6 +29,7 @@ module ex(
     wire[`RegBus] result_sum; // res of add
 
     // preperation //////////////////////////////////////////
+    assign stallreq = `NoStop;
     assign reg2_i_mux = ((aluop_i == `EXE_SUB_OP) ||
                          (aluop_i == `EXE_SLT_OP)) ?
                          (~reg2_i) + 1 : reg2_i;

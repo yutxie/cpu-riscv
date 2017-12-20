@@ -61,7 +61,6 @@ module cpu_riscv(
 
     wire[5:0] stall;
     wire stallreq_from_id;
-    wire stallreq_from_ex;
 
     pc_reg pc_reg0(
         .clk(clk),
@@ -173,9 +172,7 @@ module cpu_riscv(
         // to ex_mem
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
-        .wdata_o(ex_wdata_o),
-
-        .stallreq(stallreq_from_ex)
+        .wdata_o(ex_wdata_o)
     );
 
     ex_mem ex_mem0(
@@ -228,10 +225,7 @@ module cpu_riscv(
 
     ctrl ctrl0(
         .rst(rst),
-
         .stallreq_from_id(stallreq_from_id),
-        .stallreq_from_ex(stallreq_from_ex),
-
         .stall(stall)
     );
 
