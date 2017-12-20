@@ -18,25 +18,25 @@
 - 0 BEQ/BNE
 - 0 BLT/BGE/BLTU/BGEU
 
-###load and store
+### load and store
 
 - 0 LB/LH/LW/LBU/LHU
 - 0 SB/SH/SW
 
-###imm-op
+### imm-op
 
 - 1 ADDI
-- 1 SLTI/SLTIU
+- 2 SLTI/SLTIU
 - 1 XORI
 - 2 ORI/ANDI
-- 2 SLLI
-- 1 SRLI/SRAI
+- 2 SLLI/SRLI/SRAI
 
-###op
+### op
 
-- 1 ADD/SUB
-- 1 SLT/SLTU
-- 1 XOR/OR/AND
+- 2 ADD/SUB
+- 2 SLT/SLTU
+- 1 XOR/AND
+- 2 AND
 - 1 SLL/SRL/SRA
 
 ## to-do

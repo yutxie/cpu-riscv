@@ -76,8 +76,8 @@ module ex(
                     shiftres <= reg1_i >> reg2_i[4:0];
                 end
                 `EXE_SRA_OP: begin // not sure
-                    shiftres <= reg1_i >> reg2_i[4:0];
-                    shiftres[31:31] <= reg1_i[31:31];
+                    shiftres <= ({32{reg1_i[31]}} << (6'd32 - {1'b0,reg2_i[4:0]})) |
+                                (reg1_i >> reg2_i[4:0]);
                 end
                 default: begin
                     shiftres <= `ZeroWord;
@@ -94,7 +94,10 @@ module ex(
                 `EXE_SLT_OP, `EXE_SLTU_OP: begin
                     arithmeticres <= reg1_lt_reg2;
                 end
-                `EXE_ADD_OP, `EXE_ADDU_OP, `EXE_ADDI_OP, `EXE_ADDIU_OP: begin
+                `EXE_ADD_OP, `EXE_ADDI_OP: begin
+                    arithmeticres <= result_sum;
+                end
+                `EXE_SUB_OP: begin
                     arithmeticres <= result_sum;
                 end
                 default: begin
