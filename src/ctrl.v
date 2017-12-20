@@ -5,8 +5,6 @@ module ctrl(
     input wire                   rst,
 
     input wire                   stallreq_from_id,
-
-    //来自执行阶段的暂停请求
     input wire                   stallreq_from_ex,
     output reg[5:0]              stall
 

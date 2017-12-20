@@ -6,6 +6,7 @@
 
 - 逻辑与移位指令check
 - 算术指令check
+- stall check
 
 ## reference
 

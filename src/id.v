@@ -3,9 +3,12 @@
 module id(
 
     input wire                    rst,
+
+    // from if
     input wire[`InstAddrBus]      pc_i,
     input wire[`InstBus]          inst_i,
 
+    // from regfile
     input wire[`RegBus]           reg1_data_i,
     input wire[`RegBus]           reg2_data_i,
 
@@ -19,19 +22,21 @@ module id(
     input wire[`RegBus] mem_wdata_i,
     input wire[`RegAddrBus] mem_wd_i,
 
-    //送到regfile的信��?
+    // to regfile
     output reg                    reg1_read_o,
     output reg                    reg2_read_o,
     output reg[`RegAddrBus]       reg1_addr_o,
     output reg[`RegAddrBus]       reg2_addr_o,
 
-    //送到执行阶段的信��?
+    // to ex
     output reg[`AluOpBus]         aluop_o,
     output reg[`AluSelBus]        alusel_o,
     output reg[`RegBus]           reg1_o,
     output reg[`RegBus]           reg2_o,
     output reg[`RegAddrBus]       wd_o,
-    output reg                    wreg_o
+    output reg                    wreg_o,
+
+    output wire                   stallreq
 );
 
     wire[6:0] opcode = inst_i[6:0];
@@ -58,7 +63,9 @@ module id(
     reg[`RegBus]  imm;
     reg instvalid;
 
-    // 对指令进行译��? ///////////////////////////////////////
+    assign stallreq = `NoStop;
+
+    // decode  /////////////////////////////////////////
     always @ (*) begin
         if (rst == `RstEnable) begin
             aluop_o <= `EXE_NOP_OP;
@@ -84,7 +91,7 @@ module id(
             reg2_addr_o <= rs2_addr;
             imm <= `ZeroWord;
 
-            // 指令
+            // op
             case (opcode)
                 `OPCODE_LUI: begin
                     wreg_o <= `WriteEnable;
@@ -208,7 +215,7 @@ module id(
         end //if
     end //always
 
-    // 确定进行运算的源操作��? ///////////////////////////////
+    // get src data ///////////////////////////////
     always @ (*) begin
         if(rst == `RstEnable) begin
             reg1_o <= `ZeroWord;
