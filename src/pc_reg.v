@@ -7,6 +7,11 @@ module pc_reg(
 
     input wire[5:0]               stall,
 
+    // from id
+    input wire                    branch_flag_i,
+    input wire[`RegBus]           branch_target_addr_i,
+
+    // to inst_rom
     output reg[`InstAddrBus]      pc,
     output reg                    ce
 
@@ -16,7 +21,11 @@ module pc_reg(
         if (ce == `ChipDisable) begin // rst==RstEnable ce==ChipDisable ?
             pc <= 32'h00000000;
         end else if (stall[0] == `NoStop) begin
-            pc <= pc + 4'h4; // += 4byte
+            if (branch_flag_i == `Branch) begin
+                pc <= branch_target_addr_i;
+            end else begin
+                pc <= pc + 4'h4; // += 4byte
+            end
         end
     end
 

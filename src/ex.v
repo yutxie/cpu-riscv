@@ -12,6 +12,8 @@ module ex(
     input wire[`RegAddrBus]       wd_i,
     input wire                    wreg_i,
 
+    input wire[`RegBus]           link_addr_i,
+
     // to mem
     output reg[`RegAddrBus]       wd_o,
     output reg                    wreg_o,
@@ -41,7 +43,7 @@ module ex(
                           (reg1_i < reg2_i);
     assign reg1_i_not = ~reg1_i;
 
-    // 依据 aluop_i 指示的算子进行运算 ////////////////////////
+    // 依据 aluop_i 指示的算子进行运�? ////////////////////////
     // logic
     always @ (*) begin
         if(rst == `RstEnable) begin
@@ -107,7 +109,7 @@ module ex(
         end    //if
     end      //always
 
-    // 依据 alusel_i 指示的运算类型选择运算结果 //////////////////
+    // 依据 alusel_i 指示的运算类型�?�择运算结果 //////////////////
     always @ ( * ) begin
         wd_o <= wd_i;
         wreg_o <= wreg_i;
@@ -121,7 +123,11 @@ module ex(
             `EXE_RES_ARITHMETIC: begin
                 wdata_o <= arithmeticres;
             end
+            `EXE_RES_JUMP_BRANCH: begin
+                wdata_o <= link_addr_i;
+            end
             default: begin
+                wdata_o <= `ZeroWord;
             end
         endcase // alusel_i
     end

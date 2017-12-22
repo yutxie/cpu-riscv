@@ -22,6 +22,7 @@ module cpu_riscv(
     wire[`RegBus] id_reg2_o;
     wire id_wreg_o;
     wire[`RegAddrBus] id_wd_o;
+    wire[`RegBus] id_link_addr_o;
 
     // connect id_ex and ex
     wire[`AluOpBus] ex_aluop_i;
@@ -30,6 +31,8 @@ module cpu_riscv(
     wire[`RegBus] ex_reg2_i;
     wire ex_wreg_i;
     wire[`RegAddrBus] ex_wd_i;
+    wire[`RegBus] ex_link_addr_i;
+
 
     // connect ex and ex_mem
     wire ex_wreg_o;
@@ -59,6 +62,9 @@ module cpu_riscv(
     wire[`RegAddrBus] reg1_addr;
     wire[`RegAddrBus] reg2_addr;
 
+    wire id_branch_flag_o;
+    wire [`RegBus] id_branch_target_addr_o;
+
     wire[5:0] stall;
     wire stallreq_from_id;
 
@@ -66,6 +72,8 @@ module cpu_riscv(
         .clk(clk),
         .rst(rst),
         .stall(stall),
+        .branch_flag_i(id_branch_flag_o),
+        .branch_target_addr_i(id_branch_target_addr_o),
         .pc(pc),
         .ce(rom_ce_o)
     );
@@ -106,7 +114,6 @@ module cpu_riscv(
         // to regfile
         .reg1_read_o(reg1_read),
         .reg2_read_o(reg2_read),
-
         .reg1_addr_o(reg1_addr),
         .reg2_addr_o(reg2_addr),
 
@@ -117,6 +124,10 @@ module cpu_riscv(
         .reg2_o(id_reg2_o),
         .wd_o(id_wd_o),
         .wreg_o(id_wreg_o),
+
+        .branch_flag_o(id_branch_flag_o),
+        .branch_target_addr_o(id_branch_target_addr_o),
+        .link_addr_o(id_link_addr_o),
 
         .stallreq(stallreq_from_id)
     );
@@ -148,6 +159,7 @@ module cpu_riscv(
         .id_reg2(id_reg2_o),
         .id_wd(id_wd_o),
         .id_wreg(id_wreg_o),
+        .id_link_addr(id_link_addr_o),
 
         // to ex
         .ex_aluop(ex_aluop_i),
@@ -155,7 +167,8 @@ module cpu_riscv(
         .ex_reg1(ex_reg1_i),
         .ex_reg2(ex_reg2_i),
         .ex_wd(ex_wd_i),
-        .ex_wreg(ex_wreg_i)
+        .ex_wreg(ex_wreg_i),
+        .ex_link_addr(ex_link_addr_i),
     );
 
     ex ex0(
@@ -168,6 +181,8 @@ module cpu_riscv(
         .reg2_i(ex_reg2_i),
         .wd_i(ex_wd_i),
         .wreg_i(ex_wreg_i),
+
+        .link_addr_i(ex_link_addr_i),
 
         // to ex_mem
         .wd_o(ex_wd_o),

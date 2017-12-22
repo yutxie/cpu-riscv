@@ -36,7 +36,11 @@ module id(
     output reg[`RegAddrBus]       wd_o,
     output reg                    wreg_o,
 
-    output wire                   stallreq
+    output wire                   stallreq,
+
+    output reg                    branch_flag_o,
+    output reg[`RegBus]           branch_target_addr_o,
+    output reg[`RegBus]           link_addr_o
 );
 
     wire[6:0] opcode = inst_i[6:0];
@@ -50,20 +54,13 @@ module id(
     wire[4:0] imm0_s_type = inst_i[11:7];
     wire[11:5] imm5_s_type = inst_i[31:25];
 
-    wire[11:11] imm11_b_type = inst_i[7:7];
-    wire[4:1] imm1_b_type = inst_i[11:8];
-    wire[10:5] imm5_b_type = inst_i[30:25];
-    wire[12:12] imm12_b_type = inst_i[31:31];
-
-    wire[19:12] imm12_j_type = inst_i[19:12];
-    wire[11:11] imm11_j_type = inst_i[20:20];
-    wire[10:1] imm1_j_type = inst_i[30:21];
-    wire[20:20] imm20_j_type = inst_i[31:31];
-
     reg[`RegBus]  imm;
     reg instvalid;
 
+    wire[`RegBus] pc_plus_4;
+
     assign stallreq = `NoStop;
+    assign pc_plus_4 = pc_i + 4;
 
     // decode  /////////////////////////////////////////
     always @ (*) begin
@@ -78,31 +75,105 @@ module id(
             reg1_addr_o <= `NOPRegAddr;
             reg2_addr_o <= `NOPRegAddr;
             imm <= 32'h0;
+            link_addr_o <= `ZeroWord;
+            branch_target_addr_o <= `ZeroWord;
+            branch_flag_o <= `NotBranch;
         end
         else begin
-            aluop_o <= `EXE_NOP_OP;
-            alusel_o <= `EXE_RES_NOP;
+            aluop_o <= `EXE_NOP_OP;     //
+            alusel_o <= `EXE_RES_NOP;   //
             wd_o <= rd_addr;
-            wreg_o <= `WriteDisable;
+            wreg_o <= `WriteDisable;    //
             instvalid <= `InstInvalid;
-            reg1_read_o <= 1'b0;
-            reg2_read_o <= 1'b0;
+            reg1_read_o <= 1'b0;        //
+            reg2_read_o <= 1'b0;        //
             reg1_addr_o <= rs1_addr;
             reg2_addr_o <= rs2_addr;
-            imm <= `ZeroWord;
-
+            imm <= `ZeroWord;           //
+            link_addr_o <= `ZeroWord;          //
+            branch_target_addr_o <= `ZeroWord;  //
+            branch_flag_o <= `NotBranch;       //
             // op
             case (opcode)
                 `OPCODE_LUI: begin
-                    wreg_o <= `WriteEnable;
                     aluop_o <= `EXE_OR_OP;
                     alusel_o <= `EXE_RES_LOGIC;
+                    wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
-                    reg2_read_o <= 1'b0;
                     imm <= {inst_i[31:12], 12'h0};
-                    wd_o <= rd_addr;
-                    instvalid <= `InstValid;
-                end
+                end // lui
+                `OPCODE_JAL: begin
+                    aluop_o <= `EXE_JAL_OP;
+                    alusel_o <= `EXE_RES_JUMP_BRANCH;
+                    wreg_o <= `WriteEnable;
+                    link_addr_o <= pc_plus_4;
+                    branch_flag_o <= `Branch;
+                    branch_target_addr_o <= pc_i + {{12{inst_i[31:31]}},
+                        inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
+                end // jal
+                `OPCODE_JALR: begin
+                    aluop_o <= `EXE_JALR_OP;
+                    alusel_o <= `EXE_RES_JUMP_BRANCH;
+                    wreg_o <= `WriteEnable;
+                    reg1_read_o <= 1'b1;
+                    link_addr_o <= pc_plus_4;
+                    branch_flag_o <= `Branch;
+                    branch_target_addr_o <= reg1_o + {{12{inst_i[31:31]}},
+                        inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
+                end // jalr
+                `OPCODE_BRANCH: begin
+                    alusel_o <= `EXE_RES_JUMP_BRANCH;
+                    reg1_read_o <= 1'b1;
+                    reg2_read_o <= 1'b1;
+                    imm <= {{20{inst_i[31:31]}},
+                        inst_i[7:7], inst_i[30:25], inst_i[11:8], 1'b0};
+                    case (funct3)
+                        `FUNCT3_BEQ: begin
+                            aluop_o <= `EXE_BEQ_OP;
+                            if (reg1_o == reg2_o) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                        `FUNCT3_BNE: begin
+                            aluop_o <= `EXE_BNE_OP;
+                            if (reg1_o != reg2_o) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                        `FUNCT3_BLT: begin
+                            aluop_o <= `EXE_BLT_OP;
+                            if ((reg1_o[31] == 1'b1 && reg2_o[31] == 1'b0) ||
+                                (reg1_o[31] == reg2_o[31] && reg1_o[30:0] < reg2_o[30:0])) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                        `FUNCT3_BGE: begin
+                            aluop_o <= `EXE_BGE_OP;
+                            if ((reg1_o[31] == 1'b0 && reg2_o[31] == 1'b1) ||
+                                (reg1_o[31] == reg2_o[31] && reg1_o[30:0] >= reg2_o[30:0])) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                        `FUNCT3_BLTU: begin
+                            aluop_o <= `EXE_BLTU_OP;
+                            if (reg1_o < reg2_o) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                        `FUNCT3_BGEU: begin
+                            aluop_o <= `EXE_BGEU_OP;
+                            if (reg1_o >= reg2_o) begin
+                                branch_target_addr_o <= pc_i + imm;
+                                branch_flag_o <= `Branch;
+                            end
+                        end
+                    endcase
+                end // branch
                 `OPCODE_OP_IMM: begin
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
@@ -154,7 +225,7 @@ module id(
                         default: begin
                         end
                     endcase //funct3
-                end // opcode op imm
+                end // op imm
                 `OPCODE_OP: begin
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
@@ -207,7 +278,7 @@ module id(
                         default: begin
                         end
                     endcase //funct3
-                end // opcode op
+                end // op
                 default: begin
                 end
             endcase // opcode
@@ -250,7 +321,5 @@ module id(
             reg2_o <= `ZeroWord;
         end
     end
-
-
 
 endmodule

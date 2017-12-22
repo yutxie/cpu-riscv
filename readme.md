@@ -13,10 +13,10 @@
 
 ### jal and branch
 
-- 0 JAL
-- 0 JALR
-- 0 BEQ/BNE
-- 0 BLT/BGE/BLTU/BGEU
+- 1 JAL
+- 1 JALR
+- 1 BEQ/BNE
+- 1 BLT/BGE/BLTU/BGEU
 
 ### load and store
 
@@ -41,8 +41,13 @@
 
 ## to-do
 
-- 指令check
-- stall check
+- check op(-imm)
+- check stall
+- check jump and branch
+
+## questions
+
+- delay_slot
 
 ## reference
 
