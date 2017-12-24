@@ -5,9 +5,18 @@ module cpu_riscv(
     input wire                     clk,
     input wire                     rst,
 
+    // inst rom
     input wire[`RegBus]            rom_data_i,
     output wire[`RegBus]           rom_addr_o,
-    output wire                    rom_ce_o
+    output wire                    rom_ce_o,
+
+    // data ram
+    input wire[`RegBus]            ram_data_i,
+    output wire[`RegBus]           ram_addr_o,
+    output wire[`RegBus]           ram_data_o,
+    output wire                    ram_we_o,
+    output wire[3:0]               ram_sel_o,
+    output wire                    ram_ce_o
 );
 
     // connect if_id and id
@@ -23,6 +32,7 @@ module cpu_riscv(
     wire id_wreg_o;
     wire[`RegAddrBus] id_wd_o;
     wire[`RegBus] id_link_addr_o;
+    wire[`RegBus] id_offset_o;
 
     // connect id_ex and ex
     wire[`AluOpBus] ex_aluop_i;
@@ -32,17 +42,23 @@ module cpu_riscv(
     wire ex_wreg_i;
     wire[`RegAddrBus] ex_wd_i;
     wire[`RegBus] ex_link_addr_i;
-
+    wire[`RegBus] ex_offset_i;
 
     // connect ex and ex_mem
     wire ex_wreg_o;
     wire[`RegAddrBus] ex_wd_o;
     wire[`RegBus] ex_wdata_o;
+    wire[`AluOpBus] ex_aluop_o;
+    wire[`RegBus] ex_mem_addr_o;
+    wire[`RegBus] ex_reg2_o;
 
     // connect ex_mem and mem
     wire mem_wreg_i;
     wire[`RegAddrBus] mem_wd_i;
     wire[`RegBus] mem_wdata_i;
+    wire[`AluOpBus] mem_aluop_i;
+    wire[`RegBus] mem_mem_addr_i;
+    wire[`RegBus] mem_reg2_i;
 
     // connect mem and mem_wb
     wire mem_wreg_o;
@@ -124,6 +140,7 @@ module cpu_riscv(
         .reg2_o(id_reg2_o),
         .wd_o(id_wd_o),
         .wreg_o(id_wreg_o),
+        .offset_o(id_offset_o),
 
         .branch_flag_o(id_branch_flag_o),
         .branch_target_addr_o(id_branch_target_addr_o),
@@ -160,6 +177,7 @@ module cpu_riscv(
         .id_wd(id_wd_o),
         .id_wreg(id_wreg_o),
         .id_link_addr(id_link_addr_o),
+        .id_offset(id_offset_o),
 
         // to ex
         .ex_aluop(ex_aluop_i),
@@ -169,6 +187,7 @@ module cpu_riscv(
         .ex_wd(ex_wd_i),
         .ex_wreg(ex_wreg_i),
         .ex_link_addr(ex_link_addr_i),
+        .ex_offset(ex_offset_i)
     );
 
     ex ex0(
@@ -183,11 +202,15 @@ module cpu_riscv(
         .wreg_i(ex_wreg_i),
 
         .link_addr_i(ex_link_addr_i),
+        .offset_i(ex_offset_i),
 
         // to ex_mem
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
-        .wdata_o(ex_wdata_o)
+        .wdata_o(ex_wdata_o),
+        .aluop_o(ex_aluop_o),
+        .mem_addr_o(ex_mem_addr_o),
+        .reg2_o(ex_reg2_o)
     );
 
     ex_mem ex_mem0(
@@ -200,11 +223,16 @@ module cpu_riscv(
         .ex_wd(ex_wd_o),
         .ex_wreg(ex_wreg_o),
         .ex_wdata(ex_wdata_o),
+        .ex_aluop(ex_aluop_o),
+        .ex_mem_addr(ex_mem_addr_o),
 
         // to mem
         .mem_wd(mem_wd_i),
         .mem_wreg(mem_wreg_i),
-        .mem_wdata(mem_wdata_i)
+        .mem_wdata(mem_wdata_i),
+        .mem_aluop(mem_aluop_i),
+        .mem_mem_addr(mem_mem_addr_i),
+        .mem_reg2(mem_reg2_i)
     );
 
     mem mem0(
@@ -214,11 +242,24 @@ module cpu_riscv(
         .wd_i(mem_wd_i),
         .wreg_i(mem_wreg_i),
         .wdata_i(mem_wdata_i),
+        .aluop_i(mem_aluop_i),
+        .mem_addr_i(mem_mem_addr_i),
+        .reg2_i(mem_reg2_i),
+
+        // from data_ram
+        .mem_data_i(ram_data_i),
 
         //to mem_wb
         .wd_o(mem_wd_o),
         .wreg_o(mem_wreg_o),
-        .wdata_o(mem_wdata_o)
+        .wdata_o(mem_wdata_o),
+
+        // to data_ram
+        .mem_addr_o(ram_addr_o),
+        .mem_we_o(ram_we_o),
+        .mem_sel_o(ram_sel_o),
+        .mem_data_o(ram_data_o),
+        .mem_ce_o(ram_ce_o)
     );
 
     mem_wb mem_wb0(

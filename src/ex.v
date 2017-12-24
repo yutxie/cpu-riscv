@@ -13,11 +13,16 @@ module ex(
     input wire                    wreg_i,
 
     input wire[`RegBus]           link_addr_i,
+    input wire[`RegBus]           offset_i,
 
     // to mem
     output reg[`RegAddrBus]       wd_o,
     output reg                    wreg_o,
-    output reg[`RegBus]           wdata_o
+    output reg[`RegBus]           wdata_o,
+
+    output wire[`AluOpBus]         aluop_o,
+    output wire[`RegBus]           mem_addr_o,
+    output wire[`RegBus]           reg2_o
 );
 
     reg[`RegBus] logicout;
@@ -42,8 +47,11 @@ module ex(
                            (reg1_i[31] && reg1_i[31] && result_sum[31])) :
                           (reg1_i < reg2_i);
     assign reg1_i_not = ~reg1_i;
+    assign aluop_o = aluop_i;
+    assign mem_addr_o = reg1_i + offset_i;
+    assign reg2_o = reg2_i;
 
-    // 依据 aluop_i 指示的算子进行运�? ////////////////////////
+    // 依据 aluop_i 指示的算子进行运��? ////////////////////////
     // logic
     always @ (*) begin
         if(rst == `RstEnable) begin
@@ -109,7 +117,7 @@ module ex(
         end    //if
     end      //always
 
-    // 依据 alusel_i 指示的运算类型�?�择运算结果 //////////////////
+    // 依据 alusel_i 指示的运算类型�?�择运算结果 //////////////////
     always @ ( * ) begin
         wd_o <= wd_i;
         wreg_o <= wreg_i;

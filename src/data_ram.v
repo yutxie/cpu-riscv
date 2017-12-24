@@ -12,14 +12,14 @@ module data_ram(
 
 );
 
-    reg[`ByteWidth]  data_mem0[0:`DataMemNum-1];
+    reg[`ByteWidth]  data_mem0[0:`DataMemNum-1]; // low addr
     reg[`ByteWidth]  data_mem1[0:`DataMemNum-1];
     reg[`ByteWidth]  data_mem2[0:`DataMemNum-1];
-    reg[`ByteWidth]  data_mem3[0:`DataMemNum-1];
+    reg[`ByteWidth]  data_mem3[0:`DataMemNum-1]; // high addr
 
     always @ (posedge clk) begin
         if (ce == `ChipDisable) begin
-            // data_o <= ZeroWord;
+            // data_o <= `ZeroWord;
         end else if(we == `WriteEnable) begin
             if (sel[3] == 1'b1) begin
                 data_mem3[addr[`DataMemNumLog2+1:2]] <= data_i[31:24];

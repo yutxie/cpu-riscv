@@ -40,7 +40,9 @@ module id(
 
     output reg                    branch_flag_o,
     output reg[`RegBus]           branch_target_addr_o,
-    output reg[`RegBus]           link_addr_o
+    output reg[`RegBus]           link_addr_o,
+
+    output reg[`RegBus]           offset_o
 );
 
     wire[6:0] opcode = inst_i[6:0];
@@ -51,10 +53,8 @@ module id(
     wire[4:0] rs1_addr = inst_i[19:15];
     wire[4:0] rs2_addr = inst_i[24:20];
 
-    wire[4:0] imm0_s_type = inst_i[11:7];
-    wire[11:5] imm5_s_type = inst_i[31:25];
-
-    reg[`RegBus]  imm;
+    reg[`RegBus] imm; // default: signed ext
+    reg[`RegBus] imm_unsigned;
     reg instvalid;
 
     wire[`RegBus] pc_plus_4;
@@ -78,6 +78,7 @@ module id(
             link_addr_o <= `ZeroWord;
             branch_target_addr_o <= `ZeroWord;
             branch_flag_o <= `NotBranch;
+            offset_o <= `ZeroWord;
         end
         else begin
             aluop_o <= `EXE_NOP_OP;     //
@@ -90,9 +91,10 @@ module id(
             reg1_addr_o <= rs1_addr;
             reg2_addr_o <= rs2_addr;
             imm <= `ZeroWord;           //
-            link_addr_o <= `ZeroWord;          //
+            link_addr_o <= `ZeroWord;           //
             branch_target_addr_o <= `ZeroWord;  //
-            branch_flag_o <= `NotBranch;       //
+            branch_flag_o <= `NotBranch;        //
+            offset_o <= `ZeroWord;       //
             // op
             case (opcode)
                 `OPCODE_LUI: begin
@@ -108,8 +110,8 @@ module id(
                     wreg_o <= `WriteEnable;
                     link_addr_o <= pc_plus_4;
                     branch_flag_o <= `Branch;
-                    branch_target_addr_o <= pc_i + {{12{inst_i[31:31]}},
-                        inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
+                    branch_target_addr_o <= pc_i + {{13{inst_i[31:31]}},
+                        inst_i[19:12], inst_i[20:20], inst_i[30:21]};
                 end // jal
                 `OPCODE_JALR: begin
                     aluop_o <= `EXE_JALR_OP;
@@ -118,15 +120,17 @@ module id(
                     reg1_read_o <= 1'b1;
                     link_addr_o <= pc_plus_4;
                     branch_flag_o <= `Branch;
-                    branch_target_addr_o <= reg1_o + {{12{inst_i[31:31]}},
-                        inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
+                    branch_target_addr_o <= reg1_o + {{13{inst_i[31:31]}},
+                        inst_i[19:12], inst_i[20:20], inst_i[30:22], 1'b0};
                 end // jalr
                 `OPCODE_BRANCH: begin
                     alusel_o <= `EXE_RES_JUMP_BRANCH;
                     reg1_read_o <= 1'b1;
                     reg2_read_o <= 1'b1;
-                    imm <= {{20{inst_i[31:31]}},
-                        inst_i[7:7], inst_i[30:25], inst_i[11:8], 1'b0};
+                    imm <= {{21{inst_i[31:31]}},
+                        inst_i[7:7], inst_i[30:25], inst_i[11:8]};
+                    imm_unsigned <= {20'b0, inst_i[31:31],
+                        inst_i[7:7], inst_i[30:25], inst_i[11:8]};
                     case (funct3)
                         `FUNCT3_BEQ: begin
                             aluop_o <= `EXE_BEQ_OP;
@@ -160,6 +164,7 @@ module id(
                         end
                         `FUNCT3_BLTU: begin
                             aluop_o <= `EXE_BLTU_OP;
+                            imm <= imm_unsigned;
                             if (reg1_o < reg2_o) begin
                                 branch_target_addr_o <= pc_i + imm;
                                 branch_flag_o <= `Branch;
@@ -167,13 +172,60 @@ module id(
                         end
                         `FUNCT3_BGEU: begin
                             aluop_o <= `EXE_BGEU_OP;
+                            imm <= imm_unsigned;
                             if (reg1_o >= reg2_o) begin
                                 branch_target_addr_o <= pc_i + imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
+                        default: begin
+                        end
                     endcase
                 end // branch
+                `OPCODE_LOAD: begin
+                    alusel_o <= `EXE_RES_LOAD_STORE;
+                    wreg_o <= `WriteEnable;
+                    reg1_read_o <= 1'b1;
+                    offset_o <= {{20{inst_i[31:31]}}, inst_i[31:20]};
+                    case (funct3)
+                        `FUNCT3_LB: begin
+                            aluop_o <= `EXE_LB_OP;
+                        end
+                        `FUNCT3_LH: begin
+                            aluop_o <= `EXE_LH_OP;
+                        end
+                        `FUNCT3_LW: begin
+                            aluop_o <= `EXE_LW_OP;
+                        end
+                        `FUNCT3_LBU: begin
+                            aluop_o <= `EXE_LBU_OP;
+                        end
+                        `FUNCT3_LHU: begin
+                            aluop_o <= `EXE_LHU_OP;
+                        end
+                        default: begin
+                        end
+                    endcase
+                end // load
+                `OPCODE_STORE: begin
+                    alusel_o <= `EXE_RES_LOAD_STORE;
+                    reg1_read_o <= 1'b1;
+                    reg2_read_o <= 1'b1;
+                    offset_o <= {{21{inst_i[31:31]}}, inst_i[30:25], inst_i[11:7]};
+                    case (funct3)
+                        `FUNCT3_SB: begin
+                            aluop_o <= `EXE_SB_OP;
+                        end
+                        `FUNCT3_SH: begin
+                            aluop_o <= `EXE_SH_OP;
+                        end
+                        `FUNCT3_SW: begin
+                            aluop_o <= `EXE_SW_OP;
+                        end
+                        default: begin
+                        end
+                    endcase
+                end // store
                 `OPCODE_OP_IMM: begin
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
