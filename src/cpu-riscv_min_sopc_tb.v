@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
 
 module cpu_riscv_min_sopc_tb ();
-    
+
     reg CLOCK_50;
     reg rst;
 
-    // �?10ns反转�?次clk信号 �?周期20ns 频率 50MHz
+    // 100MHz
     initial begin
         CLOCK_50 = 1'b0;
-        forever #10 CLOCK_50 = ~CLOCK_50;
+        forever #5 CLOCK_50 = ~CLOCK_50;
     end
 
     initial begin

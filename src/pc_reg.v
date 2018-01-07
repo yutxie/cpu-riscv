@@ -17,7 +17,7 @@ module pc_reg(
 
 );
 
-    always @ (posedge clk) begin
+    always @ (posedge clk or branch_flag_i) begin
         if (ce == `ChipDisable) begin // rst==RstEnable ce==ChipDisable ?
             pc <= 32'h00000000;
         end else if (stall[0] == `NoStop) begin

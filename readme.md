@@ -1,13 +1,13 @@
 # cpu-riscv
 
-2017 Computer Architecture @ SJTU ACM Class by xxxxxyt
+2017 Computer Architecture @ SJTU ACM Class - xxxxxyt
 
 ## instruction set
 
 ### special
 
 - 1 LUI
-- 0 AUIPC
+- 2 AUIPC
 - 0 FENCE
 - 0 FENCE.I
 
@@ -20,8 +20,8 @@
 
 ### load and store
 
-- 1 LB/LH/LW/LBU/LHU
-- 1 SB/SH/SW
+- 2 LB/LH/LW/LBU/LHU
+- 2 SB/SH/SW
 
 ### imm-op
 
@@ -41,22 +41,18 @@
 
 ## to-do
 
-- check op(-imm)
-- check stall
-- check jump and branch
-- check load and store
 - branch predictor
 - i-cache and d-cache
 - memory manager
 
 ## questions
 
-- delay_slot
 - branch
   - id阶段确定target → 无气泡 → unbalance
   - ex阶段确定target → control hazard(本质类load造成的间隔1拍RAW)
     - from ex forwarding to if
     - branch prediction
+- `always @(*)`的敏感性
 
 ## reference
 

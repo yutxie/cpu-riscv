@@ -67,6 +67,9 @@ module ex(
                 `EXE_XOR_OP: begin
                     logicout <= reg1_i ^ reg2_i;
                 end
+                `EXE_LUI_OP: begin
+                    
+                end
                 default: begin
                     logicout <= `ZeroWord;
                 end

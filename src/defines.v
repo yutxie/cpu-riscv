@@ -104,6 +104,7 @@
 `define EXE_ORI_OP  8'b01011010
 `define EXE_XORI_OP  8'b01011011
 `define EXE_LUI_OP  8'b01011100
+`define EXE_AUIPC_OP  8'b01011101
 
 `define EXE_SLL_OP  8'b01111100
 `define EXE_SLLV_OP  8'b00000100
@@ -184,7 +185,7 @@
 // data_ram
 `define DataAddrBus 31:0
 `define DataBus 31:0
-`define DataMemNum 131071 // 以byte为单�?
+`define DataMemNum 131071 // 以byte为单��?
 `define DataMemNumLog2 17
 `define ByteWidth 7:0
 

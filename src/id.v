@@ -22,6 +22,9 @@ module id(
     input wire[`RegBus] mem_wdata_i,
     input wire[`RegAddrBus] mem_wd_i,
 
+    // load relate stall
+    input wire[`AluOpBus] ex_aluop_i,
+
     // to regfile
     output reg                    reg1_read_o,
     output reg                    reg2_read_o,
@@ -55,12 +58,22 @@ module id(
 
     reg[`RegBus] imm; // default: signed ext
     reg[`RegBus] imm_unsigned;
+    reg[`RegBus] offset_imm; // default: signed ext
+    reg[`RegBus] offset_imm_unsigned;
     reg instvalid;
-
+    reg stallreq_for_reg1_loadrelate;
+    reg stallreq_for_reg2_loadrelate;
     wire[`RegBus] pc_plus_4;
+    wire pre_inst_is_load;
 
-    assign stallreq = `NoStop;
+    // assign stallreq = `NoStop;
     assign pc_plus_4 = pc_i + 4;
+    assign stallreq = stallreq_for_reg1_loadrelate | stallreq_for_reg2_loadrelate;
+    assign pre_inst_is_load = ((ex_aluop_i == `EXE_LB_OP) ||
+                               (ex_aluop_i == `EXE_LBU_OP) ||
+                               (ex_aluop_i == `EXE_LH_OP) ||
+                               (ex_aluop_i == `EXE_LHU_OP) ||
+                               (ex_aluop_i == `EXE_LW_OP));
 
     // decode  /////////////////////////////////////////
     always @ (*) begin
@@ -97,11 +110,20 @@ module id(
             offset_o <= `ZeroWord;       //
             // op
             case (opcode)
+                `OPCODE_AUIPC: begin
+                    aluop_o <= `EXE_OR_OP;
+                    alusel_o <= `EXE_RES_LOGIC;
+                    wreg_o <= `WriteEnable;
+                    reg1_read_o <= 1'b1;
+                    reg1_addr_o <= 5'b00000;
+                    imm <= {inst_i[31:12], 12'h0} + pc_i;
+                end
                 `OPCODE_LUI: begin
                     aluop_o <= `EXE_OR_OP;
                     alusel_o <= `EXE_RES_LOGIC;
                     wreg_o <= `WriteEnable;
                     reg1_read_o <= 1'b1;
+                    reg1_addr_o <= 5'b00000;
                     imm <= {inst_i[31:12], 12'h0};
                 end // lui
                 `OPCODE_JAL: begin
@@ -127,22 +149,22 @@ module id(
                     alusel_o <= `EXE_RES_JUMP_BRANCH;
                     reg1_read_o <= 1'b1;
                     reg2_read_o <= 1'b1;
-                    imm <= {{21{inst_i[31:31]}},
+                    offset_imm <= {{21{inst_i[31:31]}},
                         inst_i[7:7], inst_i[30:25], inst_i[11:8]};
-                    imm_unsigned <= {20'b0, inst_i[31:31],
+                    offset_imm_unsigned <= {20'b0, inst_i[31:31],
                         inst_i[7:7], inst_i[30:25], inst_i[11:8]};
                     case (funct3)
                         `FUNCT3_BEQ: begin
                             aluop_o <= `EXE_BEQ_OP;
                             if (reg1_o == reg2_o) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
                         `FUNCT3_BNE: begin
                             aluop_o <= `EXE_BNE_OP;
                             if (reg1_o != reg2_o) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
@@ -150,7 +172,7 @@ module id(
                             aluop_o <= `EXE_BLT_OP;
                             if ((reg1_o[31] == 1'b1 && reg2_o[31] == 1'b0) ||
                                 (reg1_o[31] == reg2_o[31] && reg1_o[30:0] < reg2_o[30:0])) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
@@ -158,7 +180,7 @@ module id(
                             aluop_o <= `EXE_BGE_OP;
                             if ((reg1_o[31] == 1'b0 && reg2_o[31] == 1'b1) ||
                                 (reg1_o[31] == reg2_o[31] && reg1_o[30:0] >= reg2_o[30:0])) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
@@ -166,7 +188,7 @@ module id(
                             aluop_o <= `EXE_BLTU_OP;
                             imm <= imm_unsigned;
                             if (reg1_o < reg2_o) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
@@ -174,7 +196,7 @@ module id(
                             aluop_o <= `EXE_BGEU_OP;
                             imm <= imm_unsigned;
                             if (reg1_o >= reg2_o) begin
-                                branch_target_addr_o <= pc_i + imm;
+                                branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
                             end
                         end
@@ -340,8 +362,12 @@ module id(
 
     // get src data ///////////////////////////////
     always @ (*) begin
+        stallreq_for_reg1_loadrelate <= `NoStop;
         if(rst == `RstEnable) begin
             reg1_o <= `ZeroWord;
+        end else if (pre_inst_is_load == 1'b1 && ex_wd_i == reg1_addr_o
+                                              && reg1_read_o == 1'b1) begin
+            stallreq_for_reg1_loadrelate <= `Stop;
         end else if ((reg1_read_o == 1'b1) && (ex_wreg_i == 1'b1)
                                            && (ex_wd_i == reg1_addr_o)) begin
             reg1_o <= ex_wdata_i;
@@ -357,8 +383,12 @@ module id(
         end
     end
     always @ (*) begin
+        stallreq_for_reg2_loadrelate <= `NoStop;
         if(rst == `RstEnable) begin
             reg2_o <= `ZeroWord;
+        end else if (pre_inst_is_load == 1'b1 && ex_wd_i == reg2_addr_o
+                                              && reg2_read_o == 1'b1) begin
+            stallreq_for_reg2_loadrelate <= `Stop;
         end else if ((reg2_read_o == 1'b1) && (ex_wreg_i == 1'b1)
                                            && (ex_wd_i == reg2_addr_o)) begin
             reg2_o <= ex_wdata_i;

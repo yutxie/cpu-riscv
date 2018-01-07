@@ -142,7 +142,7 @@ module mem(
                     case (aluop_i)
                         `EXE_SB_OP: begin
                             mem_data_o <= {4{reg2_i[7:0]}};
-                            case (mem_data_i[1:0])
+                            case (mem_addr_i[1:0])
                                 2'b00: begin
                                     mem_sel_o <= 4'b0001;
                                 end
@@ -162,7 +162,7 @@ module mem(
                         end
                         `EXE_SH_OP: begin
                             mem_data_o <= {2{reg2_i[15:0]}};
-                            case (mem_data_i[1:0])
+                            case (mem_addr_i[1:0])
                                 2'b00: begin
                                     mem_sel_o <= 4'b0011;
                                 end
