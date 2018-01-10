@@ -4,6 +4,9 @@ module id(
 
     input wire                    rst,
 
+    // from id
+    input wire                    inst_invalid_i,
+
     // from if
     input wire[`InstAddrBus]      pc_i,
     input wire[`InstBus]          inst_i,
@@ -44,6 +47,7 @@ module id(
     output reg                    branch_flag_o,
     output reg[`RegBus]           branch_target_addr_o,
     output reg[`RegBus]           link_addr_o,
+    output reg                    next_inst_invalid_o,
 
     output reg[`RegBus]           offset_o
 );
@@ -92,8 +96,24 @@ module id(
             branch_target_addr_o <= `ZeroWord;
             branch_flag_o <= `NotBranch;
             offset_o <= `ZeroWord;
-        end
-        else begin
+            next_inst_invalid_o <= `InstValid;
+        end else if (inst_invalid_i == `InstInvalid) begin
+            aluop_o <= `EXE_NOP_OP;
+            alusel_o <= `EXE_RES_NOP;
+            wd_o <= `NOPRegAddr;
+            wreg_o <= `WriteDisable;
+            instvalid <= `InstInvalid;
+            reg1_read_o <= 1'b0;
+            reg2_read_o <= 1'b0;
+            reg1_addr_o <= `NOPRegAddr;
+            reg2_addr_o <= `NOPRegAddr;
+            imm <= 32'h0;
+            link_addr_o <= `ZeroWord;
+            branch_target_addr_o <= `ZeroWord;
+            branch_flag_o <= `NotBranch;
+            offset_o <= `ZeroWord;
+            next_inst_invalid_o <= `InstValid;
+        end else begin
             aluop_o <= `EXE_NOP_OP;     //
             alusel_o <= `EXE_RES_NOP;   //
             wd_o <= rd_addr;
@@ -108,6 +128,7 @@ module id(
             branch_target_addr_o <= `ZeroWord;  //
             branch_flag_o <= `NotBranch;        //
             offset_o <= `ZeroWord;       //
+            next_inst_invalid_o <= `InstValid;
             // op
             case (opcode)
                 `OPCODE_AUIPC: begin
@@ -134,6 +155,7 @@ module id(
                     branch_flag_o <= `Branch;
                     branch_target_addr_o <= pc_i + {{12{inst_i[31:31]}},
                         inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
+                    next_inst_invalid_o <= `InstInvalid;
                 end // jal
                 `OPCODE_JALR: begin
                     aluop_o <= `EXE_JALR_OP;
@@ -144,6 +166,7 @@ module id(
                     branch_flag_o <= `Branch;
                     branch_target_addr_o <= (reg1_o + {{21{inst_i[31:31]}},
                         inst_i[30:20]}) & {31'b1, 1'b0};
+                    next_inst_invalid_o <= `InstInvalid;
                 end // jalr
                 `OPCODE_BRANCH: begin
                     alusel_o <= `EXE_RES_JUMP_BRANCH;
@@ -159,6 +182,7 @@ module id(
                             if (reg1_o == reg2_o) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         `FUNCT3_BNE: begin
@@ -166,6 +190,7 @@ module id(
                             if (reg1_o != reg2_o) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         `FUNCT3_BLT: begin
@@ -174,6 +199,7 @@ module id(
                                 (reg1_o[31] == reg2_o[31] && reg1_o[30:0] < reg2_o[30:0])) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         `FUNCT3_BGE: begin
@@ -182,6 +208,7 @@ module id(
                                 (reg1_o[31] == reg2_o[31] && reg1_o[30:0] >= reg2_o[30:0])) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         `FUNCT3_BLTU: begin
@@ -190,6 +217,7 @@ module id(
                             if (reg1_o < reg2_o) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         `FUNCT3_BGEU: begin
@@ -198,6 +226,7 @@ module id(
                             if (reg1_o >= reg2_o) begin
                                 branch_target_addr_o <= pc_i + offset_imm;
                                 branch_flag_o <= `Branch;
+                                next_inst_invalid_o <= `InstInvalid;
                             end
                         end
                         default: begin
