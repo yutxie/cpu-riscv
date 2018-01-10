@@ -14,7 +14,7 @@ module cpu_riscv_min_sopc_tb ();
     initial begin
         rst = `RstEnable;
         #195 rst = `RstDisable;
-        #1000 $stop;
+        #100000 $stop;
     end
 
     cpu_riscv_min_sopc cpu_riscv_min_sopc0(

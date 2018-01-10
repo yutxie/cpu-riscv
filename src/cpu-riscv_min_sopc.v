@@ -33,20 +33,19 @@ module cpu_riscv_min_sopc (
         .ram_ce_o(mem_ce_i)
     );
 
-    inst_rom inst_rom0(
-        .addr(inst_addr),
-        .inst(inst),
-        .ce(rom_ce)
-    );
-
-    data_ram data_ram0(
+    memory memory0(
         .clk(clk),
-        .we(mem_we_i),
-        .addr(mem_addr_i),
-        .sel(mem_sel_i),
-        .data_i(mem_data_i),
-        .data_o(mem_data_o),
-        .ce(mem_ce_i)
+
+        .rom_ce(rom_ce),
+        .rom_addr(inst_addr),
+        .rom_inst(inst),
+
+        .ram_we(mem_we_i),
+        .ram_addr(mem_addr_i),
+        .ram_sel(mem_sel_i),
+        .ram_data_i(mem_data_i),
+        .ram_data_o(mem_data_o),
+        .ram_ce(mem_ce_i)
     );
 
 endmodule // cpu_riscv_min_so

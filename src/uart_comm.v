@@ -17,8 +17,8 @@ module uart
         output reg send_able,
         output reg recv_able,
 
-        output reg tx,
-        input wire rx
+        output reg Tx,
+        input wire Rx
     );
 
     reg recv_write_flag;
@@ -82,7 +82,7 @@ module uart
                     recv_cnt <= recv_cnt + 1;
             end
             if (recv_status == status_idle) begin
-                if (!rx) begin
+                if (!Rx) begin
                     recv_status <= status_begin;
                     recv_cnt <= 0;
                     recv_clk <= 1;
@@ -90,7 +90,7 @@ module uart
             end else if (sample) begin
                 case (recv_status)
                     status_begin: begin
-                        if (!rx) begin
+                        if (!Rx) begin
                             recv_status <= status_data;
                             recv_bit <= 0;
                             recv_parity <= 0;
@@ -100,14 +100,14 @@ module uart
                         end
                     end
                     status_data: begin
-                        recv_parity <= recv_parity ^ rx;
-                        recv_write_data[recv_bit] <= rx;
+                        recv_parity <= recv_parity ^ Rx;
+                        recv_write_data[recv_bit] <= Rx;
                         recv_bit <= recv_bit + 1;
                         if (recv_bit == 7)
                             recv_status <= status_valid;
                     end
                     status_valid: begin
-                        if (recv_parity == rx && !recv_full)
+                        if (recv_parity == Rx && !recv_full)
                             recv_write_flag <= 1;
                         recv_status <= status_end;
                     end
@@ -144,7 +144,7 @@ module uart
             send_bit <= 0;
             send_parity <= 0;
             tosend <= 0;
-            tx <= 1;
+            Tx <= 1;
         end else begin
             send_read_flag <= 0;
             if (cnt == 0) begin
@@ -153,25 +153,25 @@ module uart
                         if (!send_empty) begin
                             send_read_data_buf <= send_read_data;
                             send_read_flag <= 1;
-                            tx <= 0;
+                            Tx <= 0;
                             send_status <= status_data;
                             send_bit <= 0;
                             send_parity <= 0;
                         end
                     end
                     status_data: begin
-                        tx <= send_read_data_buf[send_bit];
+                        Tx <= send_read_data_buf[send_bit];
                         send_parity <= send_parity ^ send_read_data_buf[send_bit];
                         send_bit <= send_bit + 1;
                         if (send_bit == 7)
                             send_status <= status_valid;
                     end
                     status_valid: begin
-                        tx <= send_parity;
+                        Tx <= send_parity;
                         send_status <= status_end;
                     end
                     status_end: begin
-                        tx <= 1;
+                        Tx <= 1;
                         send_status <= status_idle;
                         tosend = 0;
                     end

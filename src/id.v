@@ -132,8 +132,8 @@ module id(
                     wreg_o <= `WriteEnable;
                     link_addr_o <= pc_plus_4;
                     branch_flag_o <= `Branch;
-                    branch_target_addr_o <= pc_i + {{13{inst_i[31:31]}},
-                        inst_i[19:12], inst_i[20:20], inst_i[30:21]};
+                    branch_target_addr_o <= pc_i + {{12{inst_i[31:31]}},
+                        inst_i[19:12], inst_i[20:20], inst_i[30:21], 1'b0};
                 end // jal
                 `OPCODE_JALR: begin
                     aluop_o <= `EXE_JALR_OP;
@@ -142,17 +142,17 @@ module id(
                     reg1_read_o <= 1'b1;
                     link_addr_o <= pc_plus_4;
                     branch_flag_o <= `Branch;
-                    branch_target_addr_o <= reg1_o + {{13{inst_i[31:31]}},
-                        inst_i[19:12], inst_i[20:20], inst_i[30:22], 1'b0};
+                    branch_target_addr_o <= (reg1_o + {{21{inst_i[31:31]}},
+                        inst_i[30:20]}) & {31'b1, 1'b0};
                 end // jalr
                 `OPCODE_BRANCH: begin
                     alusel_o <= `EXE_RES_JUMP_BRANCH;
                     reg1_read_o <= 1'b1;
                     reg2_read_o <= 1'b1;
-                    offset_imm <= {{21{inst_i[31:31]}},
-                        inst_i[7:7], inst_i[30:25], inst_i[11:8]};
-                    offset_imm_unsigned <= {20'b0, inst_i[31:31],
-                        inst_i[7:7], inst_i[30:25], inst_i[11:8]};
+                    offset_imm <= {{20{inst_i[31:31]}},
+                        inst_i[7:7], inst_i[30:25], inst_i[11:8], 1'b0};
+                    offset_imm_unsigned <= {19'b0, inst_i[31:31],
+                        inst_i[7:7], inst_i[30:25], inst_i[11:8], 1'b0};
                     case (funct3)
                         `FUNCT3_BEQ: begin
                             aluop_o <= `EXE_BEQ_OP;

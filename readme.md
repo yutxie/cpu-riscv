@@ -53,6 +53,7 @@
     - from ex forwarding to if
     - branch prediction
 - `always @(*)`的敏感性
+- data hazard的情况下修改pc_reg为branch_target
 
 ## reference
 
