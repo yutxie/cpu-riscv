@@ -5,47 +5,50 @@ module cpu_riscv_min_sopc (
 );
 
     // connect inst_rom
-    wire[`InstAddrBus] inst_addr;
-    wire[`InstBus] inst;
-    wire rom_ce;
+    wire[`InstAddrBus] rom_addr;
+    wire[127:0] rom_data;
+    wire rom_done;
+    wire rom_read;
 
     // connect data_ram
-    wire mem_we_i;
-    wire[`RegBus] mem_addr_i;
-    wire[`RegBus] mem_data_i;
-    wire[`RegBus] mem_data_o;
-    wire[3:0] mem_sel_i;
-    wire mem_ce_i;
+    wire ram_we;
+    wire[`RegBus] ram_addr;
+    wire[`RegBus] ram_data_i;
+    wire[`RegBus] ram_data_o;
+    wire[3:0] ram_sel;
+    wire ram_ce;
 
     cpu_riscv cpu_riscv0(
         .clk(clk),
         .rst(rst),
 
-        .rom_addr_o(inst_addr),
-        .rom_data_i(inst),
-        .rom_ce_o(rom_ce),
+        .rom_data_i(rom_data),
+        .rom_done_i(rom_done),
+        .rom_addr_o(rom_addr),
+        .rom_read_o(rom_read),
 
-        .ram_we_o(mem_we_i),
-        .ram_addr_o(mem_addr_i),
-        .ram_sel_o(mem_sel_i),
-        .ram_data_o(mem_data_i),
-        .ram_data_i(mem_data_o),
-        .ram_ce_o(mem_ce_i)
+        .ram_we_o(ram_we),
+        .ram_addr_o(ram_addr),
+        .ram_sel_o(ram_sel),
+        .ram_data_o(ram_data_i),
+        .ram_data_i(ram_data_o),
+        .ram_ce_o(ram_ce)
     );
 
-    memory memory0(
+    cache_memory cache_memory0(
         .clk(clk),
 
-        .rom_ce(rom_ce),
-        .rom_addr(inst_addr),
-        .rom_inst(inst),
+        .ic_read_i(rom_read),
+        .ic_addr_i(rom_addr),
+        .ic_data_o(rom_data),
+        .ic_done_o(rom_done),
 
-        .ram_we(mem_we_i),
-        .ram_addr(mem_addr_i),
-        .ram_sel(mem_sel_i),
-        .ram_data_i(mem_data_i),
-        .ram_data_o(mem_data_o),
-        .ram_ce(mem_ce_i)
+        .ram_we(ram_we),
+        .ram_addr(ram_addr),
+        .ram_sel(ram_sel),
+        .ram_data_i(ram_data_i),
+        .ram_data_o(ram_data_o),
+        .ram_ce(ram_ce)
     );
 
 endmodule // cpu_riscv_min_so

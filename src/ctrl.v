@@ -5,6 +5,7 @@ module ctrl(
     input wire                   rst,
 
     input wire                   stallreq_from_id,
+    input wire                   stallreq_from_ic,
     output reg[5:0]              stall
 
 );
@@ -14,6 +15,8 @@ module ctrl(
             stall <= 6'b000000;
         end else if(stallreq_from_id == `Stop) begin
             stall <= 6'b000111;
+        end else if(stallreq_from_ic == `Stop) begin
+            stall <= 6'b000011;
         end else begin
             stall <= 6'b000000;
         end    //if

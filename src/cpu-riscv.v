@@ -6,9 +6,10 @@ module cpu_riscv(
     input wire                     rst,
 
     // inst rom
-    input wire[`RegBus]            rom_data_i,
+    input wire[127:0]              rom_data_i,
+    input wire                     rom_done_i,
     output wire[`RegBus]           rom_addr_o,
-    output wire                    rom_ce_o,
+    output wire                    rom_read_o,
 
     // data ram
     input wire[`RegBus]            ram_data_i,
@@ -19,10 +20,64 @@ module cpu_riscv(
     output wire                    ram_ce_o
 );
 
-    // connect if_id and id
+    // branch
+    wire id_branch_flag_o;
+    wire [`RegBus] id_branch_target_addr_o;
+
+    // stall
+    wire[5:0] stall;
+    wire stallreq_from_ic;
+    wire stallreq_from_id;
+
+    ctrl ctrl0(
+        .rst(rst),
+        .stallreq_from_id(stallreq_from_id),
+        .stallreq_from_ic(stallreq_from_ic),
+        .stall(stall)
+    );
+
+    // connect pc_reg and i_cache
     wire[`InstAddrBus] pc;
+
+    pc_reg pc_reg0(
+        .clk(clk),
+        .rst(rst),
+        .stall(stall),
+        .branch_flag_i(id_branch_flag_o),
+        .branch_target_addr_i(id_branch_target_addr_o),
+        .pc(pc)
+    );
+
+    // connect i_cache and if_id
+    wire[`InstBus] inst;
+
+    i_cache i_cache0(
+        .clk(clk),
+        .rst(rst),
+        // connect with core
+        .core_addr_i(pc),
+        .core_data_o(inst),
+        .core_stallreq_o(stallreq_from_ic),
+        // connect with mem: cpu output
+        .mem_data_i(rom_data_i),
+        .mem_done_i(rom_done_i),
+        .mem_read_o(rom_read_o),
+        .mem_addr_o(rom_addr_o)
+    );
+
+    // connect if_id and id
     wire[`InstAddrBus] id_pc_i;
     wire[`InstBus] id_inst_i;
+
+    if_id if_id0(
+        .clk(clk),
+        .rst(rst),
+        .stall(stall),
+        .if_pc(pc),
+        .if_inst(inst),
+        .id_pc(id_pc_i),
+        .id_inst(id_inst_i)
+    );
 
     // connect id and id_ex
     wire[`AluOpBus] id_aluop_o;
@@ -35,6 +90,84 @@ module cpu_riscv(
     wire[`RegBus] id_offset_o;
     wire id_next_inst_invalid_o;
     wire id_inst_invalid_i;
+    // connect id and regfile
+    wire reg1_read;
+    wire reg2_read;
+    wire[`RegBus] reg1_data;
+    wire[`RegBus] reg2_data;
+    wire[`RegAddrBus] reg1_addr;
+    wire[`RegAddrBus] reg2_addr;
+    // connect ex and ex_mem
+    wire ex_wreg_o;
+    wire[`RegAddrBus] ex_wd_o;
+    wire[`RegBus] ex_wdata_o;
+    wire[`AluOpBus] ex_aluop_o;
+    wire[`RegBus] ex_mem_addr_o;
+    wire[`RegBus] ex_reg2_o;
+    // connect mem and mem_wb
+    wire mem_wreg_o;
+    wire[`RegAddrBus] mem_wd_o;
+    wire[`RegBus] mem_wdata_o;
+    // connect mem_wb and wb
+    wire wb_wreg_i;
+    wire[`RegAddrBus] wb_wd_i;
+    wire[`RegBus] wb_wdata_i;
+
+    id id0(
+        .rst(rst),
+        // from if_id
+        .pc_i(id_pc_i),
+        .inst_i(id_inst_i),
+        // forwarding from ex
+        .ex_wreg_i(ex_wreg_o),
+        .ex_wdata_i(ex_wdata_o),
+        .ex_wd_i(ex_wd_o),
+        // forwarding from mem
+        .mem_wreg_i(mem_wreg_o),
+        .mem_wdata_i(mem_wdata_o),
+        .mem_wd_i(mem_wd_o),
+        // load relate stall
+        .ex_aluop_i(ex_aluop_o),
+        // from regfile
+        .reg1_data_i(reg1_data),
+        .reg2_data_i(reg2_data),
+        // from id_ex
+        .inst_invalid_i(id_inst_invalid_i),
+        // to regfile
+        .reg1_read_o(reg1_read),
+        .reg2_read_o(reg2_read),
+        .reg1_addr_o(reg1_addr),
+        .reg2_addr_o(reg2_addr),
+        // to id_ex
+        .aluop_o(id_aluop_o),
+        .alusel_o(id_alusel_o),
+        .reg1_o(id_reg1_o),
+        .reg2_o(id_reg2_o),
+        .wd_o(id_wd_o),
+        .wreg_o(id_wreg_o),
+        .offset_o(id_offset_o),
+        .next_inst_invalid_o(id_next_inst_invalid_o),
+        // branch
+        .branch_flag_o(id_branch_flag_o),
+        .branch_target_addr_o(id_branch_target_addr_o),
+        .link_addr_o(id_link_addr_o),
+        // stall
+        .stallreq(stallreq_from_id)
+    );
+
+    regfile regfile0(
+        .clk(clk),
+        .rst(rst),
+        .we(wb_wreg_i),
+        .waddr(wb_wd_i),
+        .wdata(wb_wdata_i),
+        .re1(reg1_read),
+        .raddr1(reg1_addr),
+        .rdata1(reg1_data),
+        .re2(reg2_read),
+        .raddr2(reg2_addr),
+        .rdata2(reg2_data)
+    );
 
     // connect id_ex and ex
     wire[`AluOpBus] ex_aluop_i;
@@ -46,138 +179,10 @@ module cpu_riscv(
     wire[`RegBus] ex_link_addr_i;
     wire[`RegBus] ex_offset_i;
 
-    // connect ex and ex_mem
-    wire ex_wreg_o;
-    wire[`RegAddrBus] ex_wd_o;
-    wire[`RegBus] ex_wdata_o;
-    wire[`AluOpBus] ex_aluop_o;
-    wire[`RegBus] ex_mem_addr_o;
-    wire[`RegBus] ex_reg2_o;
-
-    // connect ex_mem and mem
-    wire mem_wreg_i;
-    wire[`RegAddrBus] mem_wd_i;
-    wire[`RegBus] mem_wdata_i;
-    wire[`AluOpBus] mem_aluop_i;
-    wire[`RegBus] mem_mem_addr_i;
-    wire[`RegBus] mem_reg2_i;
-
-    // connect mem and mem_wb
-    wire mem_wreg_o;
-    wire[`RegAddrBus] mem_wd_o;
-    wire[`RegBus] mem_wdata_o;
-
-    // connect mem_wb and wb
-    wire wb_wreg_i;
-    wire[`RegAddrBus] wb_wd_i;
-    wire[`RegBus] wb_wdata_i;
-
-    // connect id and regfile
-    wire reg1_read;
-    wire reg2_read;
-    wire[`RegBus] reg1_data;
-    wire[`RegBus] reg2_data;
-    wire[`RegAddrBus] reg1_addr;
-    wire[`RegAddrBus] reg2_addr;
-
-    wire id_branch_flag_o;
-    wire [`RegBus] id_branch_target_addr_o;
-
-    wire[5:0] stall;
-    wire stallreq_from_id;
-
-    pc_reg pc_reg0(
-        .clk(clk),
-        .rst(rst),
-        .stall(stall),
-        .branch_flag_i(id_branch_flag_o),
-        .branch_target_addr_i(id_branch_target_addr_o),
-        .pc(pc),
-        .ce(rom_ce_o)
-    );
-
-    assign rom_addr_o = pc;
-
-    if_id if_id0(
-        .clk(clk),
-        .rst(rst),
-        .stall(stall),
-        .if_pc(pc),
-        .if_inst(rom_data_i),
-        .id_pc(id_pc_i),
-        .id_inst(id_inst_i)
-    );
-
-    id id0(
-        .rst(rst),
-
-        // from if_id
-        .pc_i(id_pc_i),
-        .inst_i(id_inst_i),
-
-        // forwarding from ex
-        .ex_wreg_i(ex_wreg_o),
-        .ex_wdata_i(ex_wdata_o),
-        .ex_wd_i(ex_wd_o),
-
-        // forwarding from mem
-        .mem_wreg_i(mem_wreg_o),
-        .mem_wdata_i(mem_wdata_o),
-        .mem_wd_i(mem_wd_o),
-
-        // load relate stall
-        .ex_aluop_i(ex_aluop_o),
-
-        // from regfile
-        .reg1_data_i(reg1_data),
-        .reg2_data_i(reg2_data),
-
-        // from id_ex
-        .inst_invalid_i(id_inst_invalid_i),
-
-        // to regfile
-        .reg1_read_o(reg1_read),
-        .reg2_read_o(reg2_read),
-        .reg1_addr_o(reg1_addr),
-        .reg2_addr_o(reg2_addr),
-
-        // to id_ex
-        .aluop_o(id_aluop_o),
-        .alusel_o(id_alusel_o),
-        .reg1_o(id_reg1_o),
-        .reg2_o(id_reg2_o),
-        .wd_o(id_wd_o),
-        .wreg_o(id_wreg_o),
-        .offset_o(id_offset_o),
-        .next_inst_invalid_o(id_next_inst_invalid_o),
-
-        .branch_flag_o(id_branch_flag_o),
-        .branch_target_addr_o(id_branch_target_addr_o),
-        .link_addr_o(id_link_addr_o),
-
-        .stallreq(stallreq_from_id)
-    );
-
-    regfile regfile0(
-        .clk (clk),
-        .rst (rst),
-        .we    (wb_wreg_i),
-        .waddr (wb_wd_i),
-        .wdata (wb_wdata_i),
-        .re1    (reg1_read),
-        .raddr1 (reg1_addr),
-        .rdata1 (reg1_data),
-        .re2    (reg2_read),
-        .raddr2 (reg2_addr),
-        .rdata2 (reg2_data)
-    );
-
     id_ex id_ex0(
         .clk(clk),
         .rst(rst),
-
         .stall(stall),
-
         // from id
         .id_aluop(id_aluop_o),
         .id_alusel(id_alusel_o),
@@ -188,7 +193,6 @@ module cpu_riscv(
         .id_link_addr(id_link_addr_o),
         .id_offset(id_offset_o),
         .id_next_inst_invalid(id_next_inst_invalid_o),
-
         // to ex
         .ex_aluop(ex_aluop_i),
         .ex_alusel(ex_alusel_i),
@@ -198,14 +202,12 @@ module cpu_riscv(
         .ex_wreg(ex_wreg_i),
         .ex_link_addr(ex_link_addr_i),
         .ex_offset(ex_offset_i),
-
         // to id
         .id_inst_invalid(id_inst_invalid_i)
     );
-
+    
     ex ex0(
         .rst(rst),
-
         // from id_ex
         .aluop_i(ex_aluop_i),
         .alusel_i(ex_alusel_i),
@@ -213,10 +215,8 @@ module cpu_riscv(
         .reg2_i(ex_reg2_i),
         .wd_i(ex_wd_i),
         .wreg_i(ex_wreg_i),
-
         .link_addr_i(ex_link_addr_i),
         .offset_i(ex_offset_i),
-
         // to ex_mem
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
@@ -226,12 +226,19 @@ module cpu_riscv(
         .reg2_o(ex_reg2_o)
     );
 
+    // connect ex_mem and mem
+    wire mem_wreg_i;
+    wire[`RegAddrBus] mem_wd_i;
+    wire[`RegBus] mem_wdata_i;
+    wire[`AluOpBus] mem_aluop_i;
+    wire[`RegBus] mem_mem_addr_i;
+    wire[`RegBus] mem_reg2_i;
+
     ex_mem ex_mem0(
         .clk(clk),
         .rst(rst),
-
+        // stall
         .stall(stall),
-
         // from ex
         .ex_wd(ex_wd_o),
         .ex_wreg(ex_wreg_o),
@@ -239,7 +246,6 @@ module cpu_riscv(
         .ex_aluop(ex_aluop_o),
         .ex_mem_addr(ex_mem_addr_o),
         .ex_reg2(ex_reg2_o),
-
         // to mem
         .mem_wd(mem_wd_i),
         .mem_wreg(mem_wreg_i),
@@ -251,7 +257,6 @@ module cpu_riscv(
 
     mem mem0(
         .rst(rst),
-
         //from ex_mem
         .wd_i(mem_wd_i),
         .wreg_i(mem_wreg_i),
@@ -259,15 +264,12 @@ module cpu_riscv(
         .aluop_i(mem_aluop_i),
         .mem_addr_i(mem_mem_addr_i),
         .reg2_i(mem_reg2_i),
-
         // from data_ram
         .mem_data_i(ram_data_i),
-
         //to mem_wb
         .wd_o(mem_wd_o),
         .wreg_o(mem_wreg_o),
         .wdata_o(mem_wdata_o),
-
         // to data_ram
         .mem_addr_o(ram_addr_o),
         .mem_we_o(ram_we_o),
@@ -279,24 +281,16 @@ module cpu_riscv(
     mem_wb mem_wb0(
         .clk(clk),
         .rst(rst),
-
+        // stall
         .stall(stall),
-
         // from mem
         .mem_wd(mem_wd_o),
         .mem_wreg(mem_wreg_o),
         .mem_wdata(mem_wdata_o),
-
         // to wb
         .wb_wd(wb_wd_i),
         .wb_wreg(wb_wreg_i),
         .wb_wdata(wb_wdata_i)
-    );
-
-    ctrl ctrl0(
-        .rst(rst),
-        .stallreq_from_id(stallreq_from_id),
-        .stall(stall)
     );
 
 endmodule
